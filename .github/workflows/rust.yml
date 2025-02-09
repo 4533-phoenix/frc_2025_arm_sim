@@ -94,21 +94,30 @@ jobs:
       - name: Build release
         run: cargo build --verbose --release --target ${{ matrix.target }}
       
-      - name: Set binary path
+      - name: Set binary path and name
         id: binary
         shell: bash
         run: |
+          BINARY_NAME="${{ steps.get-binary-name.outputs.name }}"
           if [ "${{ runner.os }}" = "Windows" ]; then
-            echo "path=target/${{ matrix.target }}/release/${{ steps.get-binary-name.outputs.name }}.exe" >> $GITHUB_OUTPUT
+            echo "path=target/${{ matrix.target }}/release/${BINARY_NAME}.exe" >> $GITHUB_OUTPUT
+            echo "artifact_name=${BINARY_NAME}-windows.exe" >> $GITHUB_OUTPUT
           else
-            echo "path=target/${{ matrix.target }}/release/${{ steps.get-binary-name.outputs.name }}" >> $GITHUB_OUTPUT
+            echo "path=target/${{ matrix.target }}/release/${BINARY_NAME}" >> $GITHUB_OUTPUT
+            echo "artifact_name=${BINARY_NAME}-${{ matrix.artifact_name }}" >> $GITHUB_OUTPUT
           fi
+      
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p artifact
+          cp "${{ steps.binary.outputs.path }}" "artifact/${{ steps.binary.outputs.artifact_name }}"
       
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.artifact_name }}
-          path: ${{ steps.binary.outputs.path }}
+          path: artifact/${{ steps.binary.outputs.artifact_name }}
           if-no-files-found: error
 
   combine-artifacts:
@@ -125,7 +134,7 @@ jobs:
       - name: Combine artifacts
         run: |
           mkdir -p combined
-          cp -r artifacts/*/* combined/
+          find artifacts -type f -exec cp {} combined/ \;
       
       - name: Upload combined artifacts
         uses: actions/upload-artifact@v4
