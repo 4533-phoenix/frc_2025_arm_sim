@@ -1,0 +1,100 @@
+name: Rust Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run tests
+        run: cargo test --verbose
+
+  build:
+    name: Build Release
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: linux
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: macos
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Build release
+        run: cargo build --verbose --release --target ${{ matrix.target }}
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary-${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/*
+          if-no-files-found: error
+
+  combine-artifacts:
+    name: Combine Artifacts
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      
+      - name: Combine artifacts
+        run: |
+          mkdir -p combined
+          cp -r artifacts/*/* combined/
+      
+      - name: Upload combined artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-binaries
+          path: combined
+          if-no-files-found: error
