@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config
+      
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
@@ -40,17 +45,26 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: linux
+            packages: libasound2-dev pkg-config
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: macos
+            packages: ''
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: windows
+            packages: ''
     
     runs-on: ${{ matrix.os }}
     
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
