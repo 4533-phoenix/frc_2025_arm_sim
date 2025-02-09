@@ -49,17 +49,14 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: linux
             packages: libasound2-dev pkg-config libudev-dev
-            binary_pattern: "target/x86_64-unknown-linux-gnu/release/[!.]*"
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: macos
             packages: ''
-            binary_pattern: "target/x86_64-apple-darwin/release/[!.]*"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: windows
             packages: ''
-            binary_pattern: "target/x86_64-pc-windows-msvc/release/*.exe"
     
     runs-on: ${{ matrix.os }}
     
@@ -86,6 +83,14 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       
+      - name: Get binary name
+        id: get-binary
+        shell: bash
+        run: |
+          BINARY_NAME=$(cargo metadata --format-version 1 | jq -r '.packages[0].targets[] | select(.kind[] | contains("bin")) | .name')
+          echo "Binary name is: $BINARY_NAME"
+          echo "binary_name=$BINARY_NAME" >> $GITHUB_OUTPUT
+      
       - name: Build release
         run: cargo build --verbose --release --target ${{ matrix.target }}
       
@@ -93,7 +98,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.artifact_name }}
-          path: ${{ matrix.binary_pattern }}
+          path: |
+            ${{ runner.os == 'Windows' && format('target/{0}/release/{1}.exe', matrix.target, steps.get-binary.outputs.binary_name) || format('target/{0}/release/{1}', matrix.target, steps.get-binary.outputs.binary_name) }}
           if-no-files-found: error
 
   combine-artifacts:
