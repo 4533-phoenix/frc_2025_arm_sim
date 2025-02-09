@@ -49,14 +49,17 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: linux
             packages: libasound2-dev pkg-config libudev-dev
+            binary_pattern: "target/${{ matrix.target }}/release/[!.]*"
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: macos
             packages: ''
+            binary_pattern: "target/${{ matrix.target }}/release/[!.]*"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: windows
             packages: ''
+            binary_pattern: "target/${{ matrix.target }}/release/*.exe"
     
     runs-on: ${{ matrix.os }}
     
@@ -90,7 +93,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.artifact_name }}
-          path: target/${{ matrix.target }}/release/*
+          path: ${{ matrix.binary_pattern }}
           if-no-files-found: error
 
   combine-artifacts:
