@@ -82,24 +82,33 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       - name: Get binary name
-        id: get-binary
+        id: get-binary-name
         shell: bash
         run: |
-          BINARY_NAME=$(cargo metadata --format-version 1 | jq -r '.packages[0].targets[] | select(.kind[] | contains("bin")) | .name')
+          BINARY_NAME=$(grep '^name = ' Cargo.toml | head -n1 | cut -d'"' -f2)
           echo "Binary name is: $BINARY_NAME"
-          echo "binary_name=$BINARY_NAME" >> $GITHUB_OUTPUT
+          echo "name=$BINARY_NAME" >> $GITHUB_OUTPUT
       
       - name: Build release
         run: cargo build --verbose --release --target ${{ matrix.target }}
+      
+      - name: Set binary path
+        id: binary
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "path=target/${{ matrix.target }}/release/${{ steps.get-binary-name.outputs.name }}.exe" >> $GITHUB_OUTPUT
+          else
+            echo "path=target/${{ matrix.target }}/release/${{ steps.get-binary-name.outputs.name }}" >> $GITHUB_OUTPUT
+          fi
       
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.artifact_name }}
-          path: |
-            ${{ runner.os == 'Windows' && format('target/{0}/release/{1}.exe', matrix.target, steps.get-binary.outputs.binary_name) || format('target/{0}/release/{1}', matrix.target, steps.get-binary.outputs.binary_name) }}
+          path: ${{ steps.binary.outputs.path }}
           if-no-files-found: error
 
   combine-artifacts:
