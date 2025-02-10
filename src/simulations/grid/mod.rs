@@ -96,7 +96,6 @@ fn check_grid_position(
     }
 
     for _ in 0..STEPS_PER_FRAME {
-        // Cache current position values
         let current_x = grid_state.current_x;
         let current_y = grid_state.current_y;
         let max_x = grid_state.max_x;
@@ -105,10 +104,19 @@ fn check_grid_position(
         let step_size = grid_state.step_size;
 
         if let Ok((mut transform, mut material, default_material)) = intake_query.get_single_mut() {
-            transform.translation.x = current_x;
-            transform.translation.y = current_y;
+            // Calculate intake position based on theoretical arm endpoint
+            // Offset the intake by 13 units at 45 degrees from the arm endpoint
+            let offset_distance = 13.0;
+            let offset_angle = std::f32::consts::PI / 4.0; // 45 degrees
+            
+            // Position the intake relative to the theoretical arm endpoint
+            let intake_x = current_x + offset_distance * offset_angle.cos();
+            let intake_y = current_y + offset_distance * offset_angle.sin();
+            
+            transform.translation.x = intake_x;
+            transform.translation.y = intake_y;
 
-            // Improved collision check
+            // Rest of the collision checking remains the same
             let mut has_collision = false;
             physics_context.intersections_with_shape(
                 transform.translation.truncate(),
@@ -117,7 +125,7 @@ fn check_grid_position(
                 QueryFilter::new().groups(CollisionGroups::new(INTAKE, ELEVATOR)),
                 |_entity| {
                     has_collision = true;
-                    false // Stop after first collision
+                    false
                 },
             );
 

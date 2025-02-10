@@ -26,8 +26,8 @@ pub struct GridState {
 
 impl GridState {
     pub fn new() -> Self {
-        let min_x = -ARM_LENGTH;
-        let max_x = ARM_LENGTH;
+        let min_x = -ARM_LENGTH - 5.0;
+        let max_x = ARM_LENGTH + 5.0;
         let min_y = -13.65 - ARM_LENGTH;
         let max_y = 31.75 + ARM_LENGTH;
         let step_size = GRID_RESOLUTION;
