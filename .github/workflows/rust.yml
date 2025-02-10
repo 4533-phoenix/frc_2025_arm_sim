@@ -116,29 +116,6 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: binary-${{ matrix.artifact_name }}
+          name: ${{ steps.binary.outputs.artifact_name }}
           path: artifact/${{ steps.binary.outputs.artifact_name }}
-          if-no-files-found: error
-
-  combine-artifacts:
-    name: Combine Artifacts
-    needs: build
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      
-      - name: Combine artifacts
-        run: |
-          mkdir -p combined
-          find artifacts -type f -exec cp {} combined/ \;
-      
-      - name: Upload combined artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-binaries
-          path: combined
           if-no-files-found: error
