@@ -2,6 +2,7 @@ mod code_control;
 mod components;
 mod physics;
 mod systems;
+mod kinematics;
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;

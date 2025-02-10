@@ -4,6 +4,14 @@ use bevy_rapier2d::prelude::*;
 use crate::simulations::main::components::*;
 
 pub fn setup_physics(mut commands: Commands) {
+    // Load collision grid
+    if let Ok(grid) = CollisionGrid::load_from_file("collision_grid.bin") {
+        println!("Loaded collision grid: {}x{}", grid.grid[0].len(), grid.grid.len());
+        commands.insert_resource(grid);
+    } else {
+        println!("Failed to load collision grid!");
+    }
+
     let elevator_body = commands
         .spawn((
             RigidBody::Fixed,
